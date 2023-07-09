@@ -1,5 +1,10 @@
-from flask_restx import reqparse
+from dotenv import load_dotenv
+import os
 
-# Parser for the course ID
-course_id_parser = reqparse.RequestParser()
-course_id_parser.add_argument('course_id', type=int, required=True, help='Course ID is required')
+
+class BaseConfig():
+    load_dotenv()
+    # db_config
+    SECRET_KEY = os.getenv('SECRET_KEY')
+
+    

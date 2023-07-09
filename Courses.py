@@ -1,105 +1,52 @@
 import psycopg2
-from flask import Blueprint
+from flask import Flask, request
 from flask_restx import Resource, fields, Api
-
+from connection import conn_to_db
+from models import api, course_add_model,course_del_model
+from flask_cors import CORS
+from courseFunctions import delete_course,add_course
+from auth import token_required_with_role
 # Connect to the PostgreSQL database
-conn = psycopg2.connect( 
-    host="localhost",
-      database="back",
-        user="postgres",
-          password="123",
-            port=5432)
+
 
 # Create the courses API blueprint
-course_api_blueprint = Blueprint('course_api', __name__)
-api = Api(course_api_blueprint, version='1.0', title='Course API', description='API for adding, deleting, and retrieving courses')
+app=Flask(__name__)
+api.init_app(app)
+CORS(app)
 
-# Define course model
-course_model = api.model('Course', {
-    'name': fields.String(required=True, description='Course name'),
-    'description': fields.String(required=True, description='Course description'),
-    'id_user': fields.Integer(required=True, description='User ID')
-})
-
-class CourseResource(Resource):
-    @api.expect(course_model)
+@api.route('/api/delete-course')
+#@token_required_with_role('Nauczyciel')
+class DeleteCourse(Resource):
+    @api.expect(course_del_model)
     def post(self):
-        course_data = api.payload
+        req_data = request.get_json()
+        course_id=req_data.get("id_course")
+      
 
-        try:
-            # Create a cursor object to interact with the database
-            cursor = conn.cursor()
+        response = delete_course(course_id)
+        if response['success'] == True:
+            
+            return response, 200
+        else:
+            return response, 500
 
-            # Execute the INSERT statement
-            cursor.execute(
-                "INSERT INTO courses (name, description, id_user) VALUES (%s, %s, %s)",
-                (course_data['name'], course_data['description'], course_data['id_user'])
-            )
+       
+        
+@app.route('/api/add-course')
+#@token_required_with_role('Nauczyciel')
+class CourseAdd(Resource):
+    @api.expect(course_add_model)
+    def post(self):
+        req_data = request.get_json()
+        course_name=req_data.get("name")
+        course_description=req_data.get("description")
+        course_id_user=req_data.get("id_user")
+        response = add_course(course_name,course_description,course_id_user)
+        if response['success'] == True:
+            
+            return response, 200
+        else:
+            return response, 500
 
-            # Commit the transaction
-            conn.commit()
-
-            return {'message': 'Course added successfully'}, 201
-
-        except (Exception, psycopg2.Error) as error:
-            return {'message': 'Error adding course: {}'.format(error)}, 500
-
-        finally:
-            # Close the cursor
-            cursor.close()
-
-    @api.param('course_id', 'Course ID', type='integer', required=True)
-    def delete(self, course_id):
-        try:
-            # Create a cursor object to interact with the database
-            cursor = conn.cursor()
-
-            # Execute the DELETE statement
-            cursor.execute("DELETE FROM courses WHERE id = %s", (course_id,))
-
-            # Commit the transaction
-            conn.commit()
-
-            return {'message': 'Course deleted successfully'}, 200
-
-        except (Exception, psycopg2.Error) as error:
-            return {'message': 'Error deleting course: {}'.format(error)}, 500
-
-        finally:
-            # Close the cursor
-            cursor.close()
-
-    def get(self):
-        try:
-            # Create a cursor object to interact with the database
-            cursor = conn.cursor()
-
-            # Execute the SELECT statement to retrieve all courses
-            cursor.execute("SELECT * FROM courses")
-
-            # Fetch all rows from the cursor
-            rows = cursor.fetchall()
-
-            # Transform rows into a list of dictionaries
-            courses = []
-            for row in rows:
-                course = {
-                    'id': row[0],
-                    'name': row[1],
-                    'description': row[2],
-                    'id_user': row[3]
-                }
-                courses.append(course)
-
-            return {'courses': courses}, 200
-
-        except (Exception, psycopg2.Error) as error:
-            return {'message': 'Error retrieving courses: {}'.format(error)}, 500
-
-        finally:
-            # Close the cursor
-            cursor.close()
-
-# Add resource to the API
-api.add_resource(CourseResource, '/add-course', '/delete-course', '/view-course')
-
+if __name__ == '__main__':
+    app.run()
