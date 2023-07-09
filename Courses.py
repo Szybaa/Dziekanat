@@ -1,22 +1,18 @@
-from flask import Flask
-from flask_cors import CORS
-from flask_restx import Api, Resource, fields
 import psycopg2
+from flask import Blueprint
+from flask_restx import Resource, fields, Api
 
 # Connect to the PostgreSQL database
-conn = psycopg2.connect(
-     host="localhost",
-       database="back",
-         user="postgres",
-           password="123",
-             port=5432)
+conn = psycopg2.connect( 
+    host="localhost",
+      database="back",
+        user="postgres",
+          password="123",
+            port=5432)
 
-# Create Flask app
-app = Flask(__name__)
-CORS(app)
-
-# Create Flask-RestX API
-api = Api(app, version='1.0', title='Course API', description='API for adding, deleting, and retrieving courses')
+# Create the courses API blueprint
+course_api_blueprint = Blueprint('course_api', __name__)
+api = Api(course_api_blueprint, version='1.0', title='Course API', description='API for adding, deleting, and retrieving courses')
 
 # Define course model
 course_model = api.model('Course', {
@@ -28,84 +24,16 @@ course_model = api.model('Course', {
 class CourseResource(Resource):
     @api.expect(course_model)
     def post(self):
-        course_data = api.payload
+        # Rest of the code for adding a course
+        pass
 
-        try:
-            # Create a cursor object to interact with the database
-            cursor = conn.cursor()
-
-            # Execute the INSERT statement
-            cursor.execute(
-                "INSERT INTO courses (name, description, id_user) VALUES (%s, %s, %s)",
-                (course_data['name'], course_data['description'], course_data['id_user'])
-            )
-
-            # Commit the transaction
-            conn.commit()
-
-            return {'message': 'Course added successfully'}, 201
-
-        except (Exception, psycopg2.Error) as error:
-            return {'message': 'Error adding course: {}'.format(error)}, 500
-
-        finally:
-            # Close the cursor
-            cursor.close()
-
-    @api.param('course_id', 'Course ID', type='integer', required=True)
-    def delete(self, course_id):
-        try:
-            # Create a cursor object to interact with the database
-            cursor = conn.cursor()
-
-            # Execute the DELETE statement
-            cursor.execute("DELETE FROM courses WHERE id = %s", (course_id,))
-
-            # Commit the transaction
-            conn.commit()
-
-            return {'message': 'Course deleted successfully'}, 200
-
-        except (Exception, psycopg2.Error) as error:
-            return {'message': 'Error deleting course: {}'.format(error)}, 500
-
-        finally:
-            # Close the cursor
-            cursor.close()
+    def delete(self):
+        # Rest of the code for deleting a course
+        pass
 
     def get(self):
-        try:
-            # Create a cursor object to interact with the database
-            cursor = conn.cursor()
+        # Rest of the code for retrieving courses
+        pass
 
-            # Execute the SELECT statement to retrieve all courses
-            cursor.execute("SELECT * FROM courses")
-
-            # Fetch all rows from the cursor
-            rows = cursor.fetchall()
-
-            # Transform rows into a list of dictionaries
-            courses = []
-            for row in rows:
-                course = {
-                    'id': row[0],
-                    'name': row[1],
-                    'description': row[2],
-                    'id_user': row[3]
-                }
-                courses.append(course)
-
-            return {'courses': courses}, 200
-
-        except (Exception, psycopg2.Error) as error:
-            return {'message': 'Error retrieving courses: {}'.format(error)}, 500
-
-        finally:
-            # Close the cursor
-            cursor.close()
-
-# Add resource to the API
-api.add_resource(CourseResource, '/courses')
-
-if __name__ == '__main__':
-    app.run()
+# Add the resource to the API
+api.add_resource(CourseResource, '/add-course', '/delete-course', '/view-course')
