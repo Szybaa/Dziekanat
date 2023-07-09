@@ -32,7 +32,7 @@ class DeleteCourse(Resource):
 
        
         
-@app.route('/api/add-course')
+@api.route('/api/add-course')
 #@token_required_with_role('Nauczyciel')
 class CourseAdd(Resource):
     @api.expect(course_add_model)
